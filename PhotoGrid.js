@@ -17,32 +17,41 @@ class PhotoGrid extends PureComponent {
   }
 
   static defaultProps = {
-    numberImagesToShow: 0,
     onPressImage: () => {},
   }
 
-  isLastImage = (index, secondViewImages) => {
-    const { source, numberImagesToShow } = this.props
-
-    return (source.length > 5 || numberImagesToShow) && index === secondViewImages.length - 1
+  getIndex = (value) => {
+    const { source } = this.props
+    for(var i = 0; i < source.length; i++) {
+        if(source[i] === value) {
+            return i;
+        }
+    }
+    return -1; //to handle the case where the value doesn't exist
   }
 
-  handlePressImage = (event, { image, index }, secondViewImages) =>
+  isLastImage = (image) => {
+    const { imageLimit } = this.props
+    return this.getIndex(image)+1 < imageLimit ? false : true;
+  }
+
+  handlePressImage = (event, image) =>
     this.props.onPressImage(event, image, {
-      isLastImage: index && this.isLastImage(index, secondViewImages),
+      isLastImage: this.isLastImage(image),
+      imageIndex: this.getIndex(image),
     })
 
   render () {
     const { imageProps } = this.props
-    const source = _.take(this.props.source, 5)
+    const source = _.take(this.props.source, this.props.imageLimit)
     const firstViewImages = []
     const secondViewImages = []
-    const firstItemCount = source.length === 5 ? 2 : 1
+    const firstItemCount = source.length === this.props.imageLimit ? this.props.imageLimit : 1
     let index = 0
     _.each(source, (img, callback) => {
       if (index === 0) {
         firstViewImages.push(img)
-      } else if (index === 1 && firstItemCount === 2) {
+      } else if (index === 1 && firstItemCount === this.props.imageLimit) {
         firstViewImages.push(img)
       } else {
         secondViewImages.push(img)
@@ -59,7 +68,7 @@ class PhotoGrid extends PureComponent {
     } else {
       ratio = this.props.ratio
     }
-    const direction = source.length === 5 ? 'row' : 'column'
+    const direction = source.length === this.props.imageLimit ? 'row' : 'column'
 
     const firstImageWidth = direction === 'column' ? (width / firstViewImages.length) : (width * (1 - ratio))
     const firstImageHeight = direction === 'column' ? (height * (1 - ratio)) : (height / firstViewImages.length)
@@ -75,7 +84,7 @@ class PhotoGrid extends PureComponent {
         <View style={{ flex: 1, flexDirection: direction === 'row' ? 'column' : 'row' }}>
           {firstViewImages.map((image, index) => (
             <TouchableOpacity activeOpacity={0.7} key={index} style={{ flex: 1 }}
-              onPress={event => this.handlePressImage(event, { image })}>
+              onPress={event => this.handlePressImage(event, image)}>
               <ImageLoad
                 style={[styles.image, { width: firstImageWidth, height: firstImageHeight }, this.props.imageStyle]}
                 source={typeof image === 'string' ? { uri: image } : image}
@@ -89,14 +98,14 @@ class PhotoGrid extends PureComponent {
             <View style={{ width: secondViewWidth, height: secondViewHeight, flexDirection: direction === 'row' ? 'column' : 'row' }}>
               {secondViewImages.map((image, index) => (
                 <TouchableOpacity activeOpacity={0.7} key={index} style={{ flex: 1 }}
-                onPress={event => this.handlePressImage(event, { image, index }, secondViewImages)}>
-                {this.isLastImage(index, secondViewImages) ? (
+                onPress={event => this.handlePressImage(event, image)}>
+                {this.isLastImage(image) ? (
                     <ImageBackground
                       style={[styles.image, { width: secondImageWidth, height: secondImageHeight }, this.props.imageStyle]}
                       source={typeof image === 'string' ? { uri: image } : image}
                     >
                       <View style={styles.lastWrapper}>
-                        <Text style={[styles.textCount, this.props.textStyles]}>+{this.props.numberImagesToShow || this.props.source.length - 5}</Text>
+                        <Text style={[styles.textCount, this.props.textStyles]}>+{this.props.source.length - this.props.imageLimit}</Text>
                       </View>
                     </ImageBackground>
                   )
@@ -123,13 +132,15 @@ PhotoGrid.prototypes = {
   imageStyle: PropTypes.object,
   onPressImage: PropTypes.func,
   ratio: PropTypes.float,
-  imageProps: PropTypes.object
+  imageProps: PropTypes.object,
+  imageLimit: PropTypes.number
 }
 
 PhotoGrid.defaultProps = {
   style: {},
   imageStyle: {},
   imageProps: {},
+  imageLimit: 5,
   width: width,
   height: 400,
   ratio: 1 / 3
