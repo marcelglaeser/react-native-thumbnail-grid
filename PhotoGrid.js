@@ -99,7 +99,7 @@ class PhotoGrid extends PureComponent {
               {secondViewImages.map((image, index) => (
                 <TouchableOpacity activeOpacity={0.7} key={index} style={{ flex: 1 }}
                 onPress={event => this.handlePressImage(event, image)}>
-                {this.isLastImage(image) ? (
+                {this.isLastImage(image) && this.props.source.length - this.props.imageLimit > 0 ? (
                     <ImageBackground
                       style={[styles.image, { width: secondImageWidth, height: secondImageHeight }, this.props.imageStyle]}
                       source={typeof image === 'string' ? { uri: image } : image}
@@ -143,7 +143,7 @@ PhotoGrid.defaultProps = {
   imageLimit: 5,
   width: width,
   height: 400,
-  ratio: 1 / 3
+  ratio: 1 / 2
 }
 
 const styles = {
